@@ -8,6 +8,7 @@
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mo-bg-level-1-base: #ffffff;
   --bg: #ffffff;
   --bg-card: #f2f2f7;
   --text-primary: #000000;
@@ -37,6 +38,7 @@
 /* Dark theme */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --mo-bg-level-1-base: #18181b;
     --bg: #000000;
     --bg-card: #1c1c1e;
     --text-primary: #ffffff;
@@ -55,6 +57,7 @@
 }
 
 :root[data-theme="dark"] {
+  --mo-bg-level-1-base: #18181b;
   --bg: #000000;
   --bg-card: #1c1c1e;
   --text-primary: #ffffff;
@@ -77,11 +80,11 @@ html, body {
   min-height: 100svh;
   min-height: 100dvh;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--mo-bg-level-1-base);
 }
 
 body {
-  background: var(--bg);
+  background: var(--mo-bg-level-1-base);
   color: var(--text-primary);
   overscroll-behavior: none;
 }
