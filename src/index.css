@@ -9,6 +9,14 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --mo-bg-level-1-base: #ffffff;
+  --mo-modal-bg: #ffffff;
+  --mo-text-icon-primary: #242429;
+  --mo-text-icon-secondary: #808093;
+  --mo-text-icon-whitePrimaryConst: #ffffff;
+  --mo-controls-bg-neutralLight-default: #f6f6f9;
+  --mo-controls-bg-danger-default: #fa1f4b;
+  --mo-controls-text-icon-secondary-default: #8f8fa3;
+  --mo-controls-text-icon-accent-default: #a73afd;
   --mo-text-icon-success: #1ab266;
   --mo-text-icon-warning: #ff8533;
   --mo-text-icon-danger: #fa1f4b;
@@ -42,6 +50,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --mo-bg-level-1-base: #18181b;
+    --mo-modal-bg: #18181b;
+    --mo-text-icon-primary: #f6f6f9;
+    --mo-text-icon-secondary: #9b9bb0;
+    --mo-text-icon-whitePrimaryConst: #ffffff;
+    --mo-controls-bg-neutralLight-default: #2f2f37;
+    --mo-controls-bg-danger-default: #fa1f4b;
+    --mo-controls-text-icon-secondary-default: #9b9bb0;
+    --mo-controls-text-icon-accent-default: #b879fc;
     --mo-text-icon-success: #1dc973;
     --mo-text-icon-warning: #ff8533;
     --mo-text-icon-danger: #fb5173;
@@ -64,6 +80,14 @@
 
 :root[data-theme="dark"] {
   --mo-bg-level-1-base: #18181b;
+  --mo-modal-bg: #18181b;
+  --mo-text-icon-primary: #f6f6f9;
+  --mo-text-icon-secondary: #9b9bb0;
+  --mo-text-icon-whitePrimaryConst: #ffffff;
+  --mo-controls-bg-neutralLight-default: #2f2f37;
+  --mo-controls-bg-danger-default: #fa1f4b;
+  --mo-controls-text-icon-secondary-default: #9b9bb0;
+  --mo-controls-text-icon-accent-default: #b879fc;
   --mo-text-icon-success: #1dc973;
   --mo-text-icon-warning: #ff8533;
   --mo-text-icon-danger: #fb5173;
