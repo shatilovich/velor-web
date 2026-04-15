@@ -19,6 +19,7 @@ export interface PushTimerSchedule {
   limitSeconds: number
   warnAt: string | null
   dangerAt: string | null
+  autoPauseAt: string | null
 }
 
 interface PushSyncState {

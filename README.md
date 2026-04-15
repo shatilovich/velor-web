@@ -25,6 +25,7 @@ VITE_WEB_PUSH_SYNC_URL=https://your-domain.tld/api/push/sync
 - связать подписку с `deviceId`
 - отменить старые задания
 - запланировать новые push для `warnAt` и `dangerAt`
+- не держать задания дольше `autoPauseAt`, потому что после этого фронт автопоставит таймеры на паузу
 
 Пример тела запроса:
 
@@ -55,7 +56,8 @@ VITE_WEB_PUSH_SYNC_URL=https://your-domain.tld/api/push/sync
       "elapsedSeconds": 120,
       "limitSeconds": 600,
       "warnAt": "2026-04-15T08:36:00.000Z",
-      "dangerAt": "2026-04-15T08:38:00.000Z"
+      "dangerAt": "2026-04-15T08:38:00.000Z",
+      "autoPauseAt": "2026-04-15T09:30:00.000Z"
     }
   ]
 }

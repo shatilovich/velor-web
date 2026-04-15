@@ -13,6 +13,8 @@ import {
 
 const STORAGE_KEY = 'velor_stopwatches_v1'
 const SETTINGS_KEY = 'velor_settings_v1'
+const BACKGROUNDED_AT_KEY = 'velor_backgrounded_at_v1'
+const BACKGROUND_IDLE_TIMEOUT_MS = 60 * 60 * 1000
 
 // ---- Settings ----
 
@@ -62,6 +64,26 @@ function saveStopwatches(items: Record<Zone, ZoneStopwatch>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
 }
 
+function loadBackgroundedAt() {
+  try {
+    const raw = localStorage.getItem(BACKGROUNDED_AT_KEY)
+    if (!raw) return null
+
+    const value = Number(raw)
+    return Number.isFinite(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+function saveBackgroundedAt(timestamp: number) {
+  localStorage.setItem(BACKGROUNDED_AT_KEY, String(timestamp))
+}
+
+function clearBackgroundedAt() {
+  localStorage.removeItem(BACKGROUNDED_AT_KEY)
+}
+
 // ---- External store ----
 
 let state: StoreState = {
@@ -100,6 +122,45 @@ function refreshRunning(items: Record<Zone, ZoneStopwatch>, now: number): Record
     }
   })
   return updated
+}
+
+function pauseRunningTimers(items: Record<Zone, ZoneStopwatch>): Record<Zone, ZoneStopwatch> {
+  const updated = { ...items }
+
+  ALL_ZONES.forEach(z => {
+    const sw = updated[z]
+    if (!sw.isRunning) return
+
+    updated[z] = {
+      ...sw,
+      isRunning: false,
+      startedAt: null,
+      baseElapsedSeconds: sw.elapsedSeconds,
+    }
+  })
+
+  return updated
+}
+
+function restoreAfterBackground(
+  items: Record<Zone, ZoneStopwatch>,
+  now: number,
+  backgroundedAt: number | null,
+): { items: Record<Zone, ZoneStopwatch>; autoPaused: boolean } {
+  if (backgroundedAt == null) {
+    return { items: refreshRunning(items, now), autoPaused: false }
+  }
+
+  const autoPauseAt = backgroundedAt + BACKGROUND_IDLE_TIMEOUT_MS
+  if (now < autoPauseAt) {
+    return { items: refreshRunning(items, now), autoPaused: false }
+  }
+
+  const capped = refreshRunning(items, autoPauseAt)
+  return {
+    items: pauseRunningTimers(capped),
+    autoPaused: true,
+  }
 }
 
 function handleStatusTransitions(items: Record<Zone, ZoneStopwatch>, settings: AppSettings) {
@@ -162,6 +223,7 @@ function getPushSchedules(items: Record<Zone, ZoneStopwatch>, settings: AppSetti
       limitSeconds,
       warnAt: getTargetTimestamp(sw, warnAtSeconds),
       dangerAt: getTargetTimestamp(sw, limitSeconds),
+      autoPauseAt: sw.isRunning ? new Date(Date.now() + BACKGROUND_IDLE_TIMEOUT_MS).toISOString() : null,
     }
   })
 }
@@ -175,9 +237,15 @@ function syncPushTimers(items = state.stopwatches, settings = state.settings) {
 // Initialize
 {
   const now = Date.now()
-  const refreshed = refreshRunning(state.stopwatches, now)
-  state = { ...state, stopwatches: refreshed }
-  primeStatusCache(refreshed, state.settings)
+  const backgroundedAt = loadBackgroundedAt()
+  const restored = restoreAfterBackground(state.stopwatches, now, backgroundedAt)
+  state = { ...state, stopwatches: restored.items }
+  primeStatusCache(restored.items, state.settings)
+  saveStopwatches(restored.items)
+
+  if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+    clearBackgroundedAt()
+  }
 }
 
 // ---- Ticker ----
@@ -251,13 +319,7 @@ export function resetAll() {
 export function pauseAll() {
   const now = Date.now()
   const refreshed = refreshRunning(state.stopwatches, now)
-  const items = { ...refreshed }
-  ALL_ZONES.forEach(z => {
-    const sw = items[z]
-    if (sw.isRunning) {
-      items[z] = { ...sw, isRunning: false, startedAt: null, baseElapsedSeconds: sw.elapsedSeconds }
-    }
-  })
+  const items = pauseRunningTimers(refreshed)
   setState({ stopwatches: items })
   primeStatusCache(items, state.settings)
   saveStopwatches(items)
@@ -287,9 +349,19 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       const now = Date.now()
-      const updated = refreshRunning(state.stopwatches, now)
-      handleStatusTransitions(updated, state.settings)
+      const backgroundedAt = loadBackgroundedAt()
+      const restored = restoreAfterBackground(state.stopwatches, now, backgroundedAt)
+      const updated = restored.items
+
+      if (restored.autoPaused) {
+        primeStatusCache(updated, state.settings)
+      } else {
+        handleStatusTransitions(updated, state.settings)
+      }
+
       setState({ stopwatches: updated })
+      saveStopwatches(updated)
+      clearBackgroundedAt()
       syncTicker()
       syncPushTimers(updated, state.settings)
     } else {
@@ -298,6 +370,11 @@ if (typeof document !== 'undefined') {
       primeStatusCache(updated, state.settings)
       setState({ stopwatches: updated })
       saveStopwatches(updated)
+      saveBackgroundedAt(now)
+      if (tickerInterval) {
+        clearInterval(tickerInterval)
+        tickerInterval = null
+      }
       syncPushTimers(updated, state.settings)
     }
   })
