@@ -360,7 +360,7 @@ export async function scheduleTimerNotifications(timers: PushTimerSchedule[]): P
           icon: PUSH_ICON,
           badge: PUSH_BADGE,
           tag: `velor-${timer.id}-warn`,
-          // @ts-expect-error – Notification Triggers API (Chrome experimental)
+          // @ts-ignore – Notification Triggers API (Chrome experimental)
           showTrigger: new TimestampTrigger(warnTime),
           data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'warn' },
         } as NotificationOptions).catch(() => undefined)
@@ -375,7 +375,7 @@ export async function scheduleTimerNotifications(timers: PushTimerSchedule[]): P
           icon: PUSH_ICON,
           badge: PUSH_BADGE,
           tag: `velor-${timer.id}-danger`,
-          // @ts-expect-error – Notification Triggers API (Chrome experimental)
+          // @ts-ignore – Notification Triggers API (Chrome experimental)
           showTrigger: new TimestampTrigger(dangerTime),
           data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'danger' },
           requireInteraction: true,
