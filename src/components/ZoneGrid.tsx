@@ -46,12 +46,26 @@ export function ZoneGrid({ settings, items, onTapZone, onLongPressZone }: ZoneGr
   return (
     <div className="zone-grid">
       <section className="section-block">
-        <h2 className="section-title">Ресницы</h2>
-        <TwoCards left="lashLeft" right="lashRight" settings={settings} items={items} onTapZone={onTapZone} onLongPressZone={onLongPressZone} />
+        <div className="section-label">
+          <span className="section-label__icon">✦</span>
+          Ресницы
+        </div>
+        <TwoCards
+          left="lashLeft" right="lashRight"
+          settings={settings} items={items}
+          onTapZone={onTapZone} onLongPressZone={onLongPressZone}
+        />
       </section>
       <section className="section-block">
-        <h2 className="section-title">Брови</h2>
-        <TwoCards left="browLeft" right="browRight" settings={settings} items={items} onTapZone={onTapZone} onLongPressZone={onLongPressZone} />
+        <div className="section-label">
+          <span className="section-label__icon">✦</span>
+          Брови
+        </div>
+        <TwoCards
+          left="browLeft" right="browRight"
+          settings={settings} items={items}
+          onTapZone={onTapZone} onLongPressZone={onLongPressZone}
+        />
       </section>
     </div>
   )
