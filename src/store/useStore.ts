@@ -9,6 +9,8 @@ import {
   requestNotificationPermission,
   sendNotification,
   syncPushState,
+  scheduleTimerNotifications,
+  cancelZoneNotifications,
 } from '../utils/notifications'
 
 const STORAGE_KEY = 'velor_stopwatches_v1'
@@ -181,6 +183,7 @@ function handleStatusTransitions(items: Record<Zone, ZoneStopwatch>, settings: A
         tag: `velor-${z}-warn`,
         data: { zone: z, level: 'warn' },
       })
+      void cancelZoneNotifications(z, 'warn')
     } else if (newStatus === 'danger') {
       vibrate([200, 100, 200, 100, 200])
       sendNotification('Лимит превышен', `${zoneName} — время вышло!`, {
@@ -188,6 +191,7 @@ function handleStatusTransitions(items: Record<Zone, ZoneStopwatch>, settings: A
         data: { zone: z, level: 'danger' },
         renotify: true,
       })
+      void cancelZoneNotifications(z, 'danger')
     }
   })
 }
@@ -229,9 +233,9 @@ function getPushSchedules(items: Record<Zone, ZoneStopwatch>, settings: AppSetti
 }
 
 function syncPushTimers(items = state.stopwatches, settings = state.settings) {
-  void syncPushState({
-    timers: getPushSchedules(items, settings),
-  })
+  const schedules = getPushSchedules(items, settings)
+  void syncPushState({ timers: schedules })
+  void scheduleTimerNotifications(schedules)
 }
 
 // Initialize
