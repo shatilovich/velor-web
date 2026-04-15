@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Drawer, Slider, Button, Typography, Segmented, InputNumber, Divider, Modal } from 'antd'
-import { CloseOutlined, RestFilled } from '@ant-design/icons'
 import { type Zone, type AppSettings, ALL_ZONES, ZONE_INFO } from '../models/types'
 import { tapVibrate, resetVibrate } from '../utils/haptics'
-
-const { Text, Title } = Typography
 
 interface MenuViewProps {
   settings: AppSettings
@@ -15,200 +11,138 @@ interface MenuViewProps {
 
 export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose }: MenuViewProps) {
   const [confirmReset, setConfirmReset] = useState(false)
-  const [localLimits, setLocalLimits] = useState<Record<Zone, number>>(() => {
-    const l = {} as Record<Zone, number>
-    ALL_ZONES.forEach(z => { l[z] = Math.max(1, Math.round(settings.limits[z] / 60)) })
-    return l
-  })
   const ready = useRef(false)
   useEffect(() => {
     const id = requestAnimationFrame(() => { ready.current = true })
     return () => cancelAnimationFrame(id)
   }, [])
+  const [localLimits, setLocalLimits] = useState<Record<Zone, number>>(() => {
+    const l = {} as Record<Zone, number>
+    ALL_ZONES.forEach(z => { l[z] = Math.max(1, Math.round(settings.limits[z] / 60)) })
+    return l
+  })
 
-  const handleLimitChange = (zone: Zone, minutes: number | null) => {
-    if (minutes == null) return
+  const handleLimitChange = (zone: Zone, minutes: number) => {
     tapVibrate()
     const clamped = Math.max(1, Math.min(30, minutes))
     setLocalLimits(prev => ({ ...prev, [zone]: clamped }))
-    onUpdateSettings({ limits: { ...settings.limits, [zone]: clamped * 60 } })
+    const newLimits = { ...settings.limits, [zone]: clamped * 60 }
+    onUpdateSettings({ limits: newLimits })
+  }
+
+  const handleWarnChange = (value: number) => {
+    onUpdateSettings({ warnPercent: value })
+  }
+
+  const handleThemeChange = (theme: AppSettings['theme']) => {
+    tapVibrate()
+    onUpdateSettings({ theme })
   }
 
   const handleResetDefaults = () => {
     resetVibrate()
     onResetSettings()
-    setConfirmReset(false)
     onClose()
   }
 
   return (
-    <>
-      <Drawer
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="menu-title-dot" />
-            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px' }}>Настройки</span>
-          </div>
-        }
-        placement="bottom"
-        height="88dvh"
-        onClose={() => { if (ready.current) onClose() }}
-        open
-        closeIcon={
-          <div className="menu-close-btn">
-            <CloseOutlined style={{ fontSize: 12 }} />
-          </div>
-        }
-        styles={{
-          header: {
-            background: '#0f0f18',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            padding: '16px 20px',
-          },
-          body: {
-            background: '#0f0f18',
-            padding: '0 20px 40px',
-            overflowY: 'auto',
-          },
-          mask: {
-            backdropFilter: 'blur(8px)',
-            background: 'rgba(0,0,0,0.6)',
-          },
-          wrapper: {
-            borderRadius: '24px 24px 0 0',
-            overflow: 'hidden',
-          },
-        }}
-      >
-        {/* Zone limits */}
-        <div className="menu-section">
-          <Text className="menu-section-label">Лимиты зон</Text>
-          <div className="menu-card">
-            {ALL_ZONES.map((zone, idx) => {
+    <div className="menu-overlay" onClick={() => { if (ready.current) onClose() }}>
+      <div className="menu-sheet" onClick={e => e.stopPropagation()}>
+        <div className="menu-header">
+          <h2>Меню</h2>
+          <button className="menu-done-btn" onClick={onClose}>Готово</button>
+        </div>
+
+        <div className="menu-content">
+          <div className="menu-section">
+            <div className="menu-section-title">Лимиты по зонам</div>
+            {ALL_ZONES.map(zone => {
               const info = ZONE_INFO[zone]
+              const minutes = localLimits[zone]
               return (
-                <div key={zone}>
-                  <div className="menu-limit-row">
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: 'rgba(255,255,255,0.9)' }}>
-                        {info.title.replace('\n', ' ')}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-                        {info.subtitle}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Button
-                        size="small"
-                        className="stepper-btn"
-                        disabled={localLimits[zone] <= 1}
-                        onClick={() => handleLimitChange(zone, localLimits[zone] - 1)}
-                      >−</Button>
-                      <InputNumber
-                        min={1} max={30}
-                        value={localLimits[zone]}
-                        onChange={v => handleLimitChange(zone, v)}
-                        size="small"
-                        suffix="мин"
-                        style={{ width: 90 }}
-                        styles={{ input: { textAlign: 'center', fontWeight: 600 } }}
-                      />
-                      <Button
-                        size="small"
-                        className="stepper-btn"
-                        disabled={localLimits[zone] >= 30}
-                        onClick={() => handleLimitChange(zone, localLimits[zone] + 1)}
-                      >+</Button>
-                    </div>
+                <div key={zone} className="menu-row">
+                  <div className="menu-row__info">
+                    <div className="menu-row__label">{info.title.replace('\n', ' ')}</div>
+                    <div className="menu-row__sublabel">{info.subtitle}</div>
                   </div>
-                  {idx < ALL_ZONES.length - 1 && (
-                    <Divider style={{ margin: '0', borderColor: 'rgba(255,255,255,0.05)' }} />
-                  )}
+                  <div className="menu-row__value">{minutes} мин</div>
+                  <div className="stepper">
+                    <button
+                      className="stepper__btn"
+                      disabled={minutes <= 1}
+                      onClick={() => handleLimitChange(zone, minutes - 1)}
+                    >−</button>
+                    <button
+                      className="stepper__btn"
+                      disabled={minutes >= 30}
+                      onClick={() => handleLimitChange(zone, minutes + 1)}
+                    >+</button>
+                  </div>
                 </div>
               )
             })}
           </div>
-        </div>
 
-        {/* Warn threshold */}
-        <div className="menu-section">
-          <Text className="menu-section-label">Порог предупреждения</Text>
-          <div className="menu-card menu-card--pad">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Оранжевый при</span>
-              <span style={{ color: '#f97316', fontWeight: 700, fontSize: 18 }}>
-                {Math.round(settings.warnPercent * 100)}%
-              </span>
+          <div className="menu-section">
+            <div className="menu-section-title">Предупреждение</div>
+            <div className="menu-row menu-row--column">
+              <div className="menu-row__label">Оранжевый порог</div>
+              <input
+                type="range"
+                min={0.6}
+                max={0.9}
+                step={0.05}
+                value={settings.warnPercent}
+                onChange={e => handleWarnChange(Number(e.target.value))}
+                className="menu-slider"
+              />
+              <div className="menu-row__sublabel">
+                Оранжевый при ~{Math.round(settings.warnPercent * 100)}% лимита
+              </div>
             </div>
-            <Slider
-              min={60} max={90} step={5}
-              value={Math.round(settings.warnPercent * 100)}
-              onChange={v => onUpdateSettings({ warnPercent: v / 100 })}
-              tooltip={{ formatter: v => `${v}%` }}
-              styles={{
-                track: { background: 'linear-gradient(90deg, #f97316, #ef4444)' },
-                rail: { background: 'rgba(255,255,255,0.08)' },
-              }}
-            />
+          </div>
+
+          <div className="menu-section">
+            <div className="menu-section-title">Тема</div>
+            <div className="theme-picker">
+              {(['system', 'light', 'dark'] as const).map(t => (
+                <button
+                  key={t}
+                  className={`theme-picker__btn${settings.theme === t ? ' theme-picker__btn--active' : ''}`}
+                  onClick={() => handleThemeChange(t)}
+                >
+                  {t === 'system' ? 'Системная' : t === 'light' ? 'Светлая' : 'Тёмная'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="menu-section">
+            <button
+              className="menu-reset-btn"
+              onClick={() => setConfirmReset(true)}
+            >
+              Сбросить настройки
+            </button>
+            <div className="menu-row__sublabel" style={{ marginTop: 8 }}>
+              Вернём лимиты зон и порог предупреждения к значениям по умолчанию.
+            </div>
           </div>
         </div>
 
-        {/* Theme */}
-        <div className="menu-section">
-          <Text className="menu-section-label">Тема оформления</Text>
-          <Segmented
-            block
-            value={settings.theme}
-            onChange={v => { tapVibrate(); onUpdateSettings({ theme: v as AppSettings['theme'] }) }}
-            options={[
-              { label: 'Системная', value: 'system' },
-              { label: 'Светлая', value: 'light' },
-              { label: 'Тёмная', value: 'dark' },
-            ]}
-            style={{ width: '100%' }}
-          />
-        </div>
-
-        {/* Reset */}
-        <div className="menu-section">
-          <Button
-            danger
-            block
-            size="large"
-            icon={<RestFilled />}
-            onClick={() => { resetVibrate(); setConfirmReset(true) }}
-            style={{
-              borderRadius: 14,
-              height: 52,
-              fontWeight: 600,
-              background: 'rgba(239,68,68,0.08)',
-              borderColor: 'rgba(239,68,68,0.3)',
-            }}
-          >
-            Сбросить настройки
-          </Button>
-        </div>
-      </Drawer>
-
-      <Modal
-        open={confirmReset}
-        onCancel={() => setConfirmReset(false)}
-        onOk={handleResetDefaults}
-        okText="Сбросить"
-        cancelText="Отменить"
-        okButtonProps={{ danger: true }}
-        title="Сбросить настройки?"
-        centered
-        styles={{
-          content: { background: '#1a1a24', borderRadius: 20 },
-          header: { background: '#1a1a24' },
-          footer: { background: '#1a1a24' },
-        }}
-      >
-        <p style={{ color: 'rgba(255,255,255,0.6)' }}>
-          Все лимиты и пороги вернутся к значениям по умолчанию.
-        </p>
-      </Modal>
-    </>
+        {confirmReset && (
+          <div className="confirm-overlay" onClick={() => setConfirmReset(false)}>
+            <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
+              <h3>Сбросить настройки?</h3>
+              <p>Все лимиты и пороги вернутся к значениям по умолчанию.</p>
+              <div className="confirm-actions">
+                <button className="confirm-btn confirm-btn--cancel" onClick={() => setConfirmReset(false)}>Отменить</button>
+                <button className="confirm-btn confirm-btn--danger" onClick={handleResetDefaults}>Сбросить</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

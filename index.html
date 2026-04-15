@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="dark">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,19 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <title>Velor</title>
-    <script>
-      // Apply saved theme before React loads to prevent flash
-      try {
-        var s = localStorage.getItem('velor_settings_v1');
-        if (s) {
-          var t = JSON.parse(s).theme;
-          if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
-          else document.documentElement.setAttribute('data-theme', 'dark');
-        }
-      } catch(e) {}
-    </script>
   </head>
   <body>
     <div id="root"></div>
