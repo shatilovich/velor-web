@@ -58,19 +58,44 @@ function canUsePushManager() {
   return canUseServiceWorkers() && 'PushManager' in window
 }
 
-function isIOS() {
+export function isIOS() {
   if (typeof navigator === 'undefined') return false
   return /iPad|iPhone|iPod/.test(navigator.userAgent)
 }
 
-function isStandalonePwa() {
+export function isStandalonePwa() {
   if (typeof window === 'undefined') return false
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
 }
 
-function getNotificationPermission(): NotificationPermission | 'unsupported' {
+export function getNotificationPermission(): NotificationPermission | 'unsupported' {
   if (!canUseNotifications()) return 'unsupported'
   return Notification.permission
+}
+
+// Notification Triggers API (Chrome 80+, experimental)
+declare class TimestampTrigger {
+  constructor(timestamp: number)
+}
+
+export function supportsBackgroundNotifications(): boolean {
+  try { return typeof TimestampTrigger !== 'undefined' } catch { return false }
+}
+
+export interface NotificationStatus {
+  permission: NotificationPermission | 'unsupported'
+  backgroundSupported: boolean
+  isIos: boolean
+  isPwa: boolean
+}
+
+export function getNotificationStatus(): NotificationStatus {
+  return {
+    permission: getNotificationPermission(),
+    backgroundSupported: supportsBackgroundNotifications(),
+    isIos: isIOS(),
+    isPwa: isStandalonePwa(),
+  }
 }
 
 function getDeviceId() {
@@ -302,4 +327,77 @@ export function sendNotification(title: string, body: string, options: Notificat
 
     new Notification(title, notificationOptions)
   })().catch(() => undefined)
+}
+
+/**
+ * Schedules background notifications via the Notification Triggers API (Chrome 80+).
+ * Fires even when the tab is closed. Falls back gracefully on unsupported browsers.
+ */
+export async function scheduleTimerNotifications(timers: PushTimerSchedule[]): Promise<void> {
+  if (!canUseServiceWorkers()) return
+  if (Notification.permission !== 'granted') return
+  if (!supportsBackgroundNotifications()) return
+
+  const registration = await getServiceWorkerRegistration()
+  if (!registration) return
+
+  const now = Date.now()
+
+  for (const timer of timers) {
+    // Cancel any previously scheduled notifications for this zone
+    for (const level of ['warn', 'danger'] as const) {
+      const existing = await registration.getNotifications({ tag: `velor-${timer.id}-${level}` })
+      existing.forEach(n => n.close())
+    }
+
+    if (!timer.isRunning) continue
+
+    if (timer.warnAt) {
+      const warnTime = new Date(timer.warnAt).getTime()
+      if (warnTime > now + 3000) {
+        void registration.showNotification('Внимание', {
+          body: `${timer.title} — приближается лимит`,
+          icon: PUSH_ICON,
+          badge: PUSH_BADGE,
+          tag: `velor-${timer.id}-warn`,
+          // @ts-expect-error – Notification Triggers API (Chrome experimental)
+          showTrigger: new TimestampTrigger(warnTime),
+          data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'warn' },
+        } as NotificationOptions).catch(() => undefined)
+      }
+    }
+
+    if (timer.dangerAt) {
+      const dangerTime = new Date(timer.dangerAt).getTime()
+      if (dangerTime > now + 3000) {
+        void registration.showNotification('Лимит превышен', {
+          body: `${timer.title} — время вышло!`,
+          icon: PUSH_ICON,
+          badge: PUSH_BADGE,
+          tag: `velor-${timer.id}-danger`,
+          // @ts-expect-error – Notification Triggers API (Chrome experimental)
+          showTrigger: new TimestampTrigger(dangerTime),
+          data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'danger' },
+          requireInteraction: true,
+        } as NotificationOptions).catch(() => undefined)
+      }
+    }
+  }
+}
+
+/**
+ * Cancels scheduled (and currently shown) notifications for a zone.
+ * Called after firing an immediate notification to avoid duplicates.
+ */
+export async function cancelZoneNotifications(zoneId: string, level?: 'warn' | 'danger'): Promise<void> {
+  if (!canUseServiceWorkers()) return
+
+  const registration = await getServiceWorkerRegistration()
+  if (!registration) return
+
+  const levels = level ? [level] : (['warn', 'danger'] as const)
+  for (const lvl of levels) {
+    const existing = await registration.getNotifications({ tag: `velor-${zoneId}-${lvl}` })
+    existing.forEach(n => n.close())
+  }
 }
