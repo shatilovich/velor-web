@@ -106,10 +106,29 @@ export default function App() {
 
       {confirmResetAll && (
         <div className="confirm-overlay" onClick={() => setConfirmResetAll(false)}>
-          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <h3>Сбросить все таймеры?</h3>
-            <p>Все 4 зоны будут обнулены. Это действие нельзя отменить.</p>
-            <div className="confirm-actions">
+          <div className="confirm-dialog confirm-dialog--reset-all" onClick={e => e.stopPropagation()}>
+            <div className="confirm-dialog__header">
+              <div className="confirm-dialog__copy">
+                <h3>Сбросить все таймеры?</h3>
+                <p>Все 4 зоны будут обнулены. Это действие нельзя отменить.</p>
+              </div>
+              <button
+                className="confirm-close-btn"
+                type="button"
+                aria-label="Закрыть"
+                onClick={() => setConfirmResetAll(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M4 4L12 12M12 4L4 12"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="confirm-actions confirm-actions--reset-all">
               <button className="confirm-btn confirm-btn--cancel" onClick={() => setConfirmResetAll(false)}>Отменить</button>
               <button
                 className="confirm-btn confirm-btn--danger"

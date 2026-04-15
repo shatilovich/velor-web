@@ -397,6 +397,86 @@ body {
   color: #ffffff;
 }
 
+.confirm-dialog--reset-all {
+  background: var(--mo-modal-bg, #ffffff);
+  border-radius: 20px;
+  max-width: 360px;
+  padding: 24px;
+  text-align: left;
+}
+
+.confirm-dialog--reset-all .confirm-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.confirm-dialog--reset-all .confirm-dialog__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.confirm-dialog--reset-all h3 {
+  margin: 0 0 8px;
+  color: var(--mo-text-icon-primary, #242429);
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 26px;
+  letter-spacing: 0;
+}
+
+.confirm-dialog--reset-all p {
+  margin: 0;
+  color: var(--mo-text-icon-secondary, #808093);
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
+.confirm-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--mo-controls-text-icon-secondary-default, #8f8fa3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.confirm-close-btn:active {
+  transform: scale(0.92);
+}
+
+.confirm-actions--reset-all {
+  gap: 6px;
+}
+
+.confirm-actions--reset-all .confirm-btn {
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 20px;
+}
+
+.confirm-actions--reset-all .confirm-btn--cancel {
+  background: var(--mo-controls-bg-neutralLight-default, #f6f6f9);
+  color: var(--mo-controls-text-icon-accent-default, #242429);
+}
+
+.confirm-actions--reset-all .confirm-btn--danger {
+  background: var(--mo-controls-bg-danger-default, #fa385f);
+  color: var(--mo-text-icon-whitePrimaryConst, #ffffff);
+}
+
 /* ---- Menu sheet ---- */
 .menu-overlay {
   position: fixed;
