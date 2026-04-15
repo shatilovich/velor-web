@@ -9,6 +9,9 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --mo-bg-level-1-base: #ffffff;
+  --mo-text-icon-success: #1ab266;
+  --mo-text-icon-warning: #ff8533;
+  --mo-text-icon-danger: #fa1f4b;
   --bg: #ffffff;
   --bg-card: #f2f2f7;
   --text-primary: #000000;
@@ -17,9 +20,9 @@
   --border-neutral: rgba(0, 0, 0, 0.12);
   --border-neutral-paused: rgba(0, 0, 0, 0.20);
   --ring-track: rgba(0, 0, 0, 0.08);
-  --color-ok: #34c759;
-  --color-warn: #ff9500;
-  --color-danger: #ff3b30;
+  --color-ok: var(--mo-text-icon-success);
+  --color-warn: var(--mo-text-icon-warning);
+  --color-danger: var(--mo-text-icon-danger);
   --color-neutral: rgba(0, 0, 0, 0.12);
   --color-neutral-label: rgba(0, 0, 0, 0.45);
   --color-paused-label: rgba(0, 0, 0, 0.55);
@@ -39,6 +42,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --mo-bg-level-1-base: #18181b;
+    --mo-text-icon-success: #1dc973;
+    --mo-text-icon-warning: #ff8533;
+    --mo-text-icon-danger: #fb5173;
     --bg: #000000;
     --bg-card: #1c1c1e;
     --text-primary: #ffffff;
@@ -58,6 +64,9 @@
 
 :root[data-theme="dark"] {
   --mo-bg-level-1-base: #18181b;
+  --mo-text-icon-success: #1dc973;
+  --mo-text-icon-warning: #ff8533;
+  --mo-text-icon-danger: #fb5173;
   --bg: #000000;
   --bg-card: #1c1c1e;
   --text-primary: #ffffff;
