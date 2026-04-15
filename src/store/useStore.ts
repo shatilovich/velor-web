@@ -1,10 +1,15 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import {
   type Zone, type ZoneStopwatch, type AppSettings,
   ALL_ZONES, ZONE_INFO, createDefaultStopwatch, getStatus,
 } from '../models/types'
 import { vibrate } from '../utils/haptics'
-import { requestNotificationPermission, sendNotification } from '../utils/notifications'
+import {
+  type PushTimerSchedule,
+  requestNotificationPermission,
+  sendNotification,
+  syncPushState,
+} from '../utils/notifications'
 
 const STORAGE_KEY = 'velor_stopwatches_v1'
 const SETTINGS_KEY = 'velor_settings_v1'
@@ -64,7 +69,7 @@ let state: StoreState = {
   settings: loadSettings(),
 }
 
-let lastStatuses: Record<string, string> = {}
+const lastStatuses: Record<string, string> = {}
 
 const listeners = new Set<() => void>()
 
@@ -111,10 +116,17 @@ function handleStatusTransitions(items: Record<Zone, ZoneStopwatch>, settings: A
 
     if (newStatus === 'warn') {
       vibrate([100, 50, 100])
-      sendNotification('Внимание', `${zoneName} — приближается лимит`)
+      sendNotification('Внимание', `${zoneName} — приближается лимит`, {
+        tag: `velor-${z}-warn`,
+        data: { zone: z, level: 'warn' },
+      })
     } else if (newStatus === 'danger') {
       vibrate([200, 100, 200, 100, 200])
-      sendNotification('Лимит превышен', `${zoneName} — время вышло!`)
+      sendNotification('Лимит превышен', `${zoneName} — время вышло!`, {
+        tag: `velor-${z}-danger`,
+        data: { zone: z, level: 'danger' },
+        renotify: true,
+      })
     }
   })
 }
@@ -123,6 +135,40 @@ function handleStatusTransitions(items: Record<Zone, ZoneStopwatch>, settings: A
 function primeStatusCache(items: Record<Zone, ZoneStopwatch>, settings: AppSettings) {
   ALL_ZONES.forEach(z => {
     lastStatuses[z] = getStatus(z, items[z], settings)
+  })
+}
+
+function getTargetTimestamp(sw: ZoneStopwatch, targetSeconds: number) {
+  if (!sw.isRunning) return null
+
+  const remainingSeconds = targetSeconds - sw.elapsedSeconds
+  if (remainingSeconds <= 0) return new Date().toISOString()
+
+  return new Date(Date.now() + remainingSeconds * 1000).toISOString()
+}
+
+function getPushSchedules(items: Record<Zone, ZoneStopwatch>, settings: AppSettings): PushTimerSchedule[] {
+  return ALL_ZONES.map(zone => {
+    const sw = items[zone]
+    const limitSeconds = Math.max(60, settings.limits[zone])
+    const warnAtSeconds = Math.floor(limitSeconds * settings.warnPercent)
+
+    return {
+      id: zone,
+      title: ZONE_INFO[zone].title.replace('\n', ' '),
+      isRunning: sw.isRunning,
+      status: getStatus(zone, sw, settings),
+      elapsedSeconds: sw.elapsedSeconds,
+      limitSeconds,
+      warnAt: getTargetTimestamp(sw, warnAtSeconds),
+      dangerAt: getTargetTimestamp(sw, limitSeconds),
+    }
+  })
+}
+
+function syncPushTimers(items = state.stopwatches, settings = state.settings) {
+  void syncPushState({
+    timers: getPushSchedules(items, settings),
   })
 }
 
@@ -179,24 +225,27 @@ export function toggleZone(zone: Zone) {
   primeStatusCache(items, state.settings)
   saveStopwatches(items)
   syncTicker()
+  syncPushTimers(items, state.settings)
 }
 
 export function resetZone(zone: Zone) {
   const items = { ...state.stopwatches }
   items[zone] = createDefaultStopwatch()
   setState({ stopwatches: items })
-  handleStatusTransitions(items, state.settings)
+  primeStatusCache(items, state.settings)
   saveStopwatches(items)
   syncTicker()
+  syncPushTimers(items, state.settings)
 }
 
 export function resetAll() {
   const items = {} as Record<Zone, ZoneStopwatch>
   ALL_ZONES.forEach(z => { items[z] = createDefaultStopwatch() })
   setState({ stopwatches: items })
-  handleStatusTransitions(items, state.settings)
+  primeStatusCache(items, state.settings)
   saveStopwatches(items)
   syncTicker()
+  syncPushTimers(items, state.settings)
 }
 
 export function pauseAll() {
@@ -213,6 +262,7 @@ export function pauseAll() {
   primeStatusCache(items, state.settings)
   saveStopwatches(items)
   syncTicker()
+  syncPushTimers(items, state.settings)
 }
 
 export function updateSettings(partial: Partial<AppSettings>) {
@@ -220,6 +270,7 @@ export function updateSettings(partial: Partial<AppSettings>) {
   setState({ settings: newSettings })
   saveSettings(newSettings)
   primeStatusCache(state.stopwatches, newSettings)
+  syncPushTimers(state.stopwatches, newSettings)
 }
 
 export function resetSettings() {
@@ -227,6 +278,7 @@ export function resetSettings() {
   setState({ settings: def })
   saveSettings(def)
   primeStatusCache(state.stopwatches, def)
+  syncPushTimers(state.stopwatches, def)
 }
 
 // ---- Visibility change (like appDidBecomeActive / willResignActive) ----
@@ -239,16 +291,14 @@ if (typeof document !== 'undefined') {
       handleStatusTransitions(updated, state.settings)
       setState({ stopwatches: updated })
       syncTicker()
+      syncPushTimers(updated, state.settings)
     } else {
       const now = Date.now()
       const updated = refreshRunning(state.stopwatches, now)
       primeStatusCache(updated, state.settings)
       setState({ stopwatches: updated })
       saveStopwatches(updated)
-      if (tickerInterval) {
-        clearInterval(tickerInterval)
-        tickerInterval = null
-      }
+      syncPushTimers(updated, state.settings)
     }
   })
 }
@@ -271,12 +321,12 @@ export function useStore() {
 
 export function useActions() {
   return {
-    toggleZone: useCallback(toggleZone, []),
-    resetZone: useCallback(resetZone, []),
-    resetAll: useCallback(resetAll, []),
-    pauseAll: useCallback(pauseAll, []),
-    updateSettings: useCallback(updateSettings, []),
-    resetSettings: useCallback(resetSettings, []),
-    ensureNotifications: useCallback(ensureNotifications, []),
+    toggleZone,
+    resetZone,
+    resetAll,
+    pauseAll,
+    updateSettings,
+    resetSettings,
+    ensureNotifications,
   }
 }

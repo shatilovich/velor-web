@@ -1,73 +1,98 @@
-# React + TypeScript + Vite
+# Velor Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PWA-таймер для мастера с поддержкой локальных уведомлений и Web Push.
 
-Currently, two official plugins are available:
+## Что важно для iOS
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Фоновые push-уведомления на iPhone работают только для установленной PWA (`Add to Home Screen`).
+- Одного `Notifications API` из страницы недостаточно: когда iOS сворачивает приложение, JS на странице засыпает.
+- Для реальной доставки в фоне нужен Web Push: `Service Worker` + `Push API` + backend, который отправляет push в моменты `warn` и `danger`.
 
-## React Compiler
+## Переменные окружения
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Создайте `.env.local`:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+VITE_WEB_PUSH_PUBLIC_KEY=your_vapid_public_key
+VITE_WEB_PUSH_SYNC_URL=https://your-domain.tld/api/push/sync
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Контракт `POST /api/push/sync`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Фронтенд отправляет один payload, из которого backend должен:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
+- сохранить или обновить `PushSubscription`
+- связать подписку с `deviceId`
+- отменить старые задания
+- запланировать новые push для `warnAt` и `dangerAt`
+
+Пример тела запроса:
+
+```json
+{
+  "deviceId": "8f5a0c30-7f17-4f0a-b2d6-1b3bbd8f61e0",
+  "installed": true,
+  "ios": true,
+  "permission": "granted",
+  "subscription": {
+    "endpoint": "https://web.push.apple.com/...",
+    "expirationTime": null,
+    "keys": {
+      "p256dh": "...",
+      "auth": "..."
+    }
   },
-])
+  "timezone": "Asia/Yekaterinburg",
+  "locale": "ru-RU",
+  "userAgent": "Mozilla/5.0 ...",
+  "syncedAt": "2026-04-15T08:30:00.000Z",
+  "timers": [
+    {
+      "id": "lashLeft",
+      "title": "Левая ресница",
+      "isRunning": true,
+      "status": "ok",
+      "elapsedSeconds": 120,
+      "limitSeconds": 600,
+      "warnAt": "2026-04-15T08:36:00.000Z",
+      "dangerAt": "2026-04-15T08:38:00.000Z"
+    }
+  ]
+}
 ```
+
+## Ожидаемый payload push
+
+`service worker` понимает оба варианта:
+
+```json
+{
+  "title": "Внимание",
+  "body": "Левая ресница — приближается лимит",
+  "tag": "velor-lashLeft-warn",
+  "url": "/"
+}
+```
+
+или
+
+```json
+{
+  "notification": {
+    "title": "Лимит превышен",
+    "body": "Левая ресница — время вышло!",
+    "tag": "velor-lashLeft-danger",
+    "navigate": "/"
+  }
+}
+```
+
+## Запуск
+
+```bash
+npm install
+npm run build
+npm run preview
+```
+
+Для проверки iOS используйте HTTPS и установленную Home Screen PWA.
