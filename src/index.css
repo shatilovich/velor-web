@@ -141,7 +141,7 @@ body {
   flex-direction: column;
   height: 100%;
   min-height: 100%;
-  padding: var(--safe-top) 0 var(--safe-bottom) 0;
+  padding: var(--safe-top) 0 0 0;
 }
 
 .app-header {
@@ -187,7 +187,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 16px 24px;
+  padding: 4px 16px calc(24px + var(--safe-bottom));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -344,11 +344,7 @@ body {
 /* ---- Confirm dialog ---- */
 .confirm-overlay {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: calc(var(--safe-bottom) * -1);
-  left: 0;
-  min-height: calc(100dvh + var(--safe-bottom));
+  inset: 0;
   background: var(--overlay-bg);
   display: flex;
   align-items: center;
@@ -504,11 +500,7 @@ body {
 /* ---- Menu sheet ---- */
 .menu-overlay {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: calc(var(--safe-bottom) * -1);
-  left: 0;
-  min-height: calc(100dvh + var(--safe-bottom));
+  inset: 0;
   background: var(--overlay-bg);
   z-index: 50;
   display: flex;
