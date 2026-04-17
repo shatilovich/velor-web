@@ -8,6 +8,22 @@ import {
   type NotificationStatus,
 } from '../utils/notifications'
 
+const MIN_LIMIT_MINUTES = 1
+const MAX_LIMIT_MINUTES = 30
+const THEME_OPTIONS = [
+  { value: 'system', label: 'Системная' },
+  { value: 'light', label: 'Светлая' },
+  { value: 'dark', label: 'Тёмная' },
+] as const
+
+function getMinutesByZone(limits: AppSettings['limits']): Record<Zone, number> {
+  const localLimits = {} as Record<Zone, number>
+  ALL_ZONES.forEach(zone => {
+    localLimits[zone] = Math.max(MIN_LIMIT_MINUTES, Math.round(limits[zone] / 60))
+  })
+  return localLimits
+}
+
 interface MenuViewProps {
   settings: AppSettings
   onUpdateSettings: (partial: Partial<AppSettings>) => void
@@ -37,15 +53,15 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
-  const [localLimits, setLocalLimits] = useState<Record<Zone, number>>(() => {
-    const l = {} as Record<Zone, number>
-    ALL_ZONES.forEach(z => { l[z] = Math.max(1, Math.round(settings.limits[z] / 60)) })
-    return l
-  })
+  const [localLimits, setLocalLimits] = useState<Record<Zone, number>>(() => getMinutesByZone(settings.limits))
+
+  useEffect(() => {
+    setLocalLimits(getMinutesByZone(settings.limits))
+  }, [settings.limits])
 
   const handleLimitChange = (zone: Zone, minutes: number) => {
     tapVibrate()
-    const clamped = Math.max(1, Math.min(30, minutes))
+    const clamped = Math.max(MIN_LIMIT_MINUTES, Math.min(MAX_LIMIT_MINUTES, minutes))
     setLocalLimits(prev => ({ ...prev, [zone]: clamped }))
     const newLimits = { ...settings.limits, [zone]: clamped * 60 }
     onUpdateSettings({ limits: newLimits })
@@ -68,9 +84,12 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
 
   const handleRequestNotifications = async () => {
     setRequestingNotif(true)
-    await requestNotificationPermission()
-    setNotifStatus(getNotificationStatus())
-    setRequestingNotif(false)
+    try {
+      await requestNotificationPermission()
+      setNotifStatus(getNotificationStatus())
+    } finally {
+      setRequestingNotif(false)
+    }
   }
 
   const renderNotifContent = () => {
@@ -164,6 +183,7 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
         </div>
         <button
           className="notif-enable-btn"
+          type="button"
           onClick={handleRequestNotifications}
           disabled={requestingNotif}
         >
@@ -179,7 +199,7 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
         <div className="menu-header">
           <div className="menu-header__drag" />
           <h2>Настройки</h2>
-          <button className="menu-done-btn" onClick={onClose}>Готово</button>
+          <button className="menu-done-btn" type="button" onClick={onClose}>Готово</button>
         </div>
 
         <div className="menu-content">
@@ -204,8 +224,8 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
                     </div>
                     <div className="menu-row__value">{minutes} мин</div>
                     <div className="stepper">
-                      <button className="stepper__btn" disabled={minutes <= 1} onClick={() => handleLimitChange(zone, minutes - 1)}>−</button>
-                      <button className="stepper__btn" disabled={minutes >= 30} onClick={() => handleLimitChange(zone, minutes + 1)}>+</button>
+                      <button className="stepper__btn" type="button" disabled={minutes <= MIN_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes - 1)}>−</button>
+                      <button className="stepper__btn" type="button" disabled={minutes >= MAX_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes + 1)}>+</button>
                     </div>
                   </div>
                 )
@@ -240,20 +260,21 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
           <div className="menu-section">
             <div className="menu-section-title">Тема</div>
             <div className="theme-picker">
-              {(['system', 'light', 'dark'] as const).map(t => (
+              {THEME_OPTIONS.map(option => (
                 <button
-                  key={t}
-                  className={`theme-picker__btn${settings.theme === t ? ' theme-picker__btn--active' : ''}`}
-                  onClick={() => handleThemeChange(t)}
+                  key={option.value}
+                  type="button"
+                  className={`theme-picker__btn${settings.theme === option.value ? ' theme-picker__btn--active' : ''}`}
+                  onClick={() => handleThemeChange(option.value)}
                 >
-                  {t === 'system' ? 'Системная' : t === 'light' ? 'Светлая' : 'Тёмная'}
+                  {option.label}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="menu-section">
-            <button className="menu-reset-btn" onClick={() => setConfirmReset(true)}>
+            <button className="menu-reset-btn" type="button" onClick={() => setConfirmReset(true)}>
               Сбросить настройки
             </button>
           </div>
@@ -266,8 +287,8 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
               <h3>Сбросить настройки?</h3>
               <p>Все лимиты и пороги вернутся к значениям по умолчанию.</p>
               <div className="confirm-actions">
-                <button className="confirm-btn confirm-btn--cancel" onClick={() => setConfirmReset(false)}>Отменить</button>
-                <button className="confirm-btn confirm-btn--danger" onClick={handleResetDefaults}>Сбросить</button>
+                <button className="confirm-btn confirm-btn--cancel" type="button" onClick={() => setConfirmReset(false)}>Отменить</button>
+                <button className="confirm-btn confirm-btn--danger" type="button" onClick={handleResetDefaults}>Сбросить</button>
               </div>
             </div>
           </div>

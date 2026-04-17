@@ -15,7 +15,7 @@ interface ZoneCardProps {
   onLongPress: () => void
 }
 
-function statusLine(_elapsed: number, limit: number, status: ZoneStatus): string {
+function statusLine(limit: number, status: ZoneStatus): string {
   const limitText = formatTime(limit)
   switch (status) {
     case 'idle': return `Лимит ${limitText}`
@@ -31,8 +31,16 @@ export function ZoneCard({ zone, elapsed, limit, progress, status, isRunning, on
   const didLongPress = useRef(false)
   const info = ZONE_INFO[zone]
 
+  const clearLongPressTimer = useCallback(() => {
+    if (!longPressTimer.current) return
+
+    clearTimeout(longPressTimer.current)
+    longPressTimer.current = null
+  }, [])
+
   const handlePointerDown = useCallback(() => {
     didLongPress.current = false
+    clearLongPressTimer()
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true
       if (isRunning) {
@@ -40,25 +48,19 @@ export function ZoneCard({ zone, elapsed, limit, progress, status, isRunning, on
         onLongPress()
       }
     }, 600)
-  }, [isRunning, onLongPress])
+  }, [clearLongPressTimer, isRunning, onLongPress])
 
   const handlePointerUp = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
+    clearLongPressTimer()
     if (!didLongPress.current) {
       tapVibrate()
       onTap()
     }
-  }, [onTap])
+  }, [clearLongPressTimer, onTap])
 
   const handlePointerLeave = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }, [])
+    clearLongPressTimer()
+  }, [clearLongPressTimer])
 
   return (
     <div
@@ -66,6 +68,7 @@ export function ZoneCard({ zone, elapsed, limit, progress, status, isRunning, on
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerLeave}
       onContextMenu={e => e.preventDefault()}
     >
       <div className="zone-card__top">
@@ -79,7 +82,7 @@ export function ZoneCard({ zone, elapsed, limit, progress, status, isRunning, on
       <div className="zone-card__bottom">
         <div className="zone-card__time">{formatTime(elapsed)}</div>
         <div className={`zone-card__status zone-card__status--${status}`}>
-          {statusLine(elapsed, limit, status)}
+          {statusLine(limit, status)}
         </div>
       </div>
     </div>

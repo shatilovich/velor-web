@@ -1,4 +1,11 @@
-import { type Zone, type ZoneStopwatch, type AppSettings, getStatus, getProgress } from '../models/types'
+import {
+  type AppSettings,
+  type Zone,
+  type ZoneStopwatch,
+  ZONE_SECTIONS,
+  getProgress,
+  getStatus,
+} from '../models/types'
 import { ZoneCard } from './ZoneCard'
 
 interface ZoneGridProps {
@@ -45,14 +52,19 @@ function TwoCards({
 export function ZoneGrid({ settings, items, onTapZone, onLongPressZone }: ZoneGridProps) {
   return (
     <div className="zone-grid">
-      <section className="section-block">
-        <h2 className="section-title">Ресницы</h2>
-        <TwoCards left="lashLeft" right="lashRight" settings={settings} items={items} onTapZone={onTapZone} onLongPressZone={onLongPressZone} />
-      </section>
-      <section className="section-block">
-        <h2 className="section-title">Брови</h2>
-        <TwoCards left="browLeft" right="browRight" settings={settings} items={items} onTapZone={onTapZone} onLongPressZone={onLongPressZone} />
-      </section>
+      {ZONE_SECTIONS.map(section => (
+        <section key={section.title} className="section-block">
+          <h2 className="section-title">{section.title}</h2>
+          <TwoCards
+            left={section.zones[0]}
+            right={section.zones[1]}
+            settings={settings}
+            items={items}
+            onTapZone={onTapZone}
+            onLongPressZone={onLongPressZone}
+          />
+        </section>
+      ))}
     </div>
   )
 }

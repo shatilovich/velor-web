@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { ALL_ZONES } from './models/types'
+import { type Zone, ALL_ZONES } from './models/types'
 import { ZoneGrid } from './components/ZoneGrid'
 import { MenuView } from './components/MenuView'
 import { useStore, useActions } from './store/useStore'
@@ -7,34 +7,40 @@ import { tapVibrate, pauseVibrate, resetVibrate } from './utils/haptics'
 
 export default function App() {
   const { stopwatches, settings } = useStore()
-  const actions = useActions()
+  const {
+    ensureNotifications,
+    pauseAll,
+    resetAll,
+    resetSettings,
+    resetZone,
+    toggleZone,
+    updateSettings,
+  } = useActions()
   const [showMenu, setShowMenu] = useState(false)
   const [confirmResetAll, setConfirmResetAll] = useState(false)
 
-  // Apply theme
   useEffect(() => {
     const root = document.documentElement
-    if (settings.theme === 'dark') {
-      root.setAttribute('data-theme', 'dark')
-    } else if (settings.theme === 'light') {
-      root.setAttribute('data-theme', 'light')
-    } else {
+    if (settings.theme === 'system') {
       root.removeAttribute('data-theme')
+      return
     }
+
+    root.setAttribute('data-theme', settings.theme)
   }, [settings.theme])
 
-  const handleTapZone = useCallback((zone: typeof ALL_ZONES[number]) => {
-    actions.ensureNotifications()
-    actions.toggleZone(zone)
-  }, [actions])
+  const handleTapZone = useCallback((zone: Zone) => {
+    ensureNotifications()
+    toggleZone(zone)
+  }, [ensureNotifications, toggleZone])
 
-  const handleLongPressZone = useCallback((zone: typeof ALL_ZONES[number]) => {
+  const handleLongPressZone = useCallback((zone: Zone) => {
     if (stopwatches[zone].isRunning) {
-      actions.resetZone(zone)
+      resetZone(zone)
     }
-  }, [actions, stopwatches])
+  }, [resetZone, stopwatches])
 
-  const hasRunning = ALL_ZONES.some(z => stopwatches[z].isRunning)
+  const hasRunning = ALL_ZONES.some(zone => stopwatches[zone].isRunning)
 
   return (
     <div className="app">
@@ -43,6 +49,7 @@ export default function App() {
         <div className="header-actions">
           <button
             className="header-btn"
+            type="button"
             onClick={() => {
               resetVibrate()
               setConfirmResetAll(true)
@@ -56,6 +63,7 @@ export default function App() {
           </button>
           <button
             className="header-btn"
+            type="button"
             onClick={() => {
               tapVibrate()
               setShowMenu(true)
@@ -81,9 +89,10 @@ export default function App() {
         {hasRunning && (
           <button
             className="pause-all-btn"
+            type="button"
             onClick={() => {
               pauseVibrate()
-              actions.pauseAll()
+              pauseAll()
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -98,8 +107,8 @@ export default function App() {
       {showMenu && (
         <MenuView
           settings={settings}
-          onUpdateSettings={actions.updateSettings}
-          onResetSettings={actions.resetSettings}
+          onUpdateSettings={updateSettings}
+          onResetSettings={resetSettings}
           onClose={() => setShowMenu(false)}
         />
       )}
@@ -129,12 +138,13 @@ export default function App() {
               </button>
             </div>
             <div className="confirm-actions confirm-actions--reset-all">
-              <button className="confirm-btn confirm-btn--cancel" onClick={() => setConfirmResetAll(false)}>Отменить</button>
+              <button className="confirm-btn confirm-btn--cancel" type="button" onClick={() => setConfirmResetAll(false)}>Отменить</button>
               <button
                 className="confirm-btn confirm-btn--danger"
+                type="button"
                 onClick={() => {
                   resetVibrate()
-                  actions.resetAll()
+                  resetAll()
                   setConfirmResetAll(false)
                 }}
               >
