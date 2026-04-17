@@ -89,6 +89,10 @@ export interface NotificationStatus {
   isPwa: boolean
 }
 
+type ScheduledNotificationOptions = NotificationOptions & {
+  showTrigger?: TimestampTrigger
+}
+
 export function getNotificationStatus(): NotificationStatus {
   return {
     permission: getNotificationPermission(),
@@ -355,31 +359,33 @@ export async function scheduleTimerNotifications(timers: PushTimerSchedule[]): P
     if (timer.warnAt) {
       const warnTime = new Date(timer.warnAt).getTime()
       if (warnTime > now + 3000) {
-        void registration.showNotification('Внимание', {
+        const options: ScheduledNotificationOptions = {
           body: `${timer.title} — приближается лимит`,
           icon: PUSH_ICON,
           badge: PUSH_BADGE,
           tag: `velor-${timer.id}-warn`,
-          // @ts-expect-error Notification Triggers API is still missing in TS DOM types.
           showTrigger: new TimestampTrigger(warnTime),
           data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'warn' },
-        } as NotificationOptions).catch(() => undefined)
+        }
+
+        void registration.showNotification('Внимание', options).catch(() => undefined)
       }
     }
 
     if (timer.dangerAt) {
       const dangerTime = new Date(timer.dangerAt).getTime()
       if (dangerTime > now + 3000) {
-        void registration.showNotification('Лимит превышен', {
+        const options: ScheduledNotificationOptions = {
           body: `${timer.title} — время вышло!`,
           icon: PUSH_ICON,
           badge: PUSH_BADGE,
           tag: `velor-${timer.id}-danger`,
-          // @ts-expect-error Notification Triggers API is still missing in TS DOM types.
           showTrigger: new TimestampTrigger(dangerTime),
           data: { url: PUSH_NAVIGATE_URL, zone: timer.id, level: 'danger' },
           requireInteraction: true,
-        } as NotificationOptions).catch(() => undefined)
+        }
+
+        void registration.showNotification('Лимит превышен', options).catch(() => undefined)
       }
     }
   }
