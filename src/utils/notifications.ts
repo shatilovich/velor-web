@@ -12,8 +12,8 @@ export function sendNotification(title: string, body: string) {
   try {
     new Notification(title, {
       body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icon-192.svg',
+      badge: '/icon-192.svg',
       tag: `velor-${Date.now()}`,
     })
   } catch {
@@ -23,8 +23,8 @@ export function sendNotification(title: string, body: string) {
       navigator.serviceWorker.ready.then(reg => {
         reg.showNotification(title, {
           body,
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
+          icon: '/icon-192.svg',
+          badge: '/icon-192.svg',
         })
       })
     }
