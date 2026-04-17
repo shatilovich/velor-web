@@ -1,5 +1,5 @@
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const path = require('path');
+const { chromium } = require('/opt/node22/lib/node_modules/playwright')
+const path = require('path')
 
 const svgInner = `
   <defs>
@@ -67,10 +67,10 @@ async function generateIcons() {
   const page = await browser.newPage();
 
   const configs = [
-    { name: 'icon-512.png',          size: 512 },
-    { name: 'icon-192.png',          size: 192 },
-    { name: 'apple-touch-icon.png',  size: 180 },
-  ];
+    { name: 'icon-512.png', size: 512 },
+    { name: 'icon-192.png', size: 192 },
+    { name: 'apple-touch-icon.png', size: 180 },
+  ]
 
   for (const { name, size } of configs) {
     await page.setViewportSize({ width: size, height: size });
@@ -87,18 +87,21 @@ async function generateIcons() {
     ${svgInner}
   </svg>
 </body>
-</html>`);
+</html>`)
 
     await page.screenshot({
-      path: path.join('/home/user/velor-web/public', name),
+      path: path.join(__dirname, 'public', name),
       clip: { x: 0, y: 0, width: size, height: size },
       omitBackground: false,
-    });
-    console.log(`Generated ${name} (${size}x${size})`);
+    })
+    console.log(`Generated ${name} (${size}x${size})`)
   }
 
-  await browser.close();
-  console.log('All icons generated.');
+  await browser.close()
+  console.log('All icons generated.')
 }
 
-generateIcons().catch(err => { console.error(err); process.exit(1); });
+generateIcons().catch(err => {
+  console.error(err)
+  process.exit(1)
+})
