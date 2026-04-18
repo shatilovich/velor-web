@@ -345,6 +345,16 @@ export function pauseAll() {
   commitStopwatches(pauseRunningTimers(refreshed, now))
 }
 
+export function resumeAll() {
+  const now = Date.now()
+  const items = createZoneRecord(zone => {
+    const sw = state.stopwatches[zone]
+    if (!sw.isRunning && sw.elapsedSeconds > 0) return startStopwatch(sw, now)
+    return sw
+  })
+  commitStopwatches(items)
+}
+
 export function updateSettings(partial: Partial<AppSettings>) {
   const nextSettings: AppSettings = {
     ...state.settings,
@@ -402,6 +412,7 @@ const ACTIONS = {
   resetZone,
   resetAll,
   pauseAll,
+  resumeAll,
   updateSettings,
   resetSettings,
   ensureNotifications,

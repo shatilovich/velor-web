@@ -10,6 +10,7 @@ export default function App() {
   const {
     ensureNotifications,
     pauseAll,
+    resumeAll,
     resetAll,
     resetSettings,
     resetZone,
@@ -41,11 +42,20 @@ export default function App() {
   }, [resetZone, stopwatches])
 
   const hasRunning = ALL_ZONES.some(zone => stopwatches[zone].isRunning)
+  const hasAnyStopped = ALL_ZONES.some(zone => !stopwatches[zone].isRunning && stopwatches[zone].elapsedSeconds > 0)
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">Velor</h1>
+        <div className="velor-brand">
+          <span className="velor-brand__mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z" stroke="#A73AFD" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M12 7.5l4 2.5v4l-4 2.5-4-2.5v-4l4-2.5z" fill="#A73AFD"/>
+            </svg>
+          </span>
+          <h1 className="app-title">Velor</h1>
+        </div>
         <div className="header-actions">
           <button
             className="header-btn"
@@ -96,10 +106,26 @@ export default function App() {
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
+              <rect x="6" y="4" width="4" height="16" rx="1.5" />
+              <rect x="14" y="4" width="4" height="16" rx="1.5" />
             </svg>
             Пауза
+          </button>
+        )}
+
+        {!hasRunning && hasAnyStopped && (
+          <button
+            className="resume-all-btn"
+            type="button"
+            onClick={() => {
+              tapVibrate()
+              resumeAll()
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 4.5v15a1 1 0 0 0 1.5.87l13-7.5a1 1 0 0 0 0-1.74l-13-7.5A1 1 0 0 0 7 4.5z"/>
+            </svg>
+            Продолжить
           </button>
         )}
       </main>
