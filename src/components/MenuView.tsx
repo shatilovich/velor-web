@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { type Zone, type AppSettings, ALL_ZONES, ZONE_INFO } from '../models/types'
 import { tapVibrate, resetVibrate } from '../utils/haptics'
 import {
@@ -222,10 +222,14 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
                       <div className="menu-row__label">{info.title.replace('\n', ' ')}</div>
                       <div className="menu-row__sublabel">{info.subtitle}</div>
                     </div>
-                    <div className="menu-row__value">{minutes} мин</div>
-                    <div className="stepper">
-                      <button className="stepper__btn" type="button" disabled={minutes <= MIN_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes - 1)}>−</button>
-                      <button className="stepper__btn" type="button" disabled={minutes >= MAX_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes + 1)}>+</button>
+                    <div className="wb-counter">
+                      <button className="wb-counter__btn" type="button" disabled={minutes <= MIN_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes - 1)} aria-label="Минус">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 12h14"/></svg>
+                      </button>
+                      <div className="wb-counter__value">{minutes} <span>мин</span></div>
+                      <button className="wb-counter__btn" type="button" disabled={minutes >= MAX_LIMIT_MINUTES} onClick={() => handleLimitChange(zone, minutes + 1)} aria-label="Плюс">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
                     </div>
                   </div>
                 )
@@ -249,6 +253,7 @@ export function MenuView({ settings, onUpdateSettings, onResetSettings, onClose 
                   value={settings.warnPercent}
                   onChange={e => handleWarnChange(Number(e.target.value))}
                   className="menu-slider"
+                  style={{ '--slider-fill': `${((settings.warnPercent - 0.6) / 0.3) * 100}%` } as React.CSSProperties}
                 />
                 <div className="menu-row__sublabel">
                   Зона окрашивается в оранжевый при достижении {Math.round(settings.warnPercent * 100)}% от лимита

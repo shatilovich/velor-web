@@ -7,14 +7,14 @@ interface RingProps {
 }
 
 const STATUS_COLORS: Record<ZoneStatus, string> = {
-  idle: 'var(--color-neutral)',
-  paused: 'var(--color-neutral)',
-  ok: 'var(--color-ok)',
-  warn: 'var(--color-warn)',
+  idle:   'var(--ring-neutral)',
+  paused: 'var(--ring-neutral)',
+  ok:     'var(--color-ok)',
+  warn:   'var(--color-warn)',
   danger: 'var(--color-danger)',
 }
 
-export function Ring({ progress, status, size = 40 }: RingProps) {
+export function Ring({ progress, status, size = 44 }: RingProps) {
   const strokeWidth = 4
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
